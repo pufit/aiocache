@@ -62,6 +62,7 @@ class RedisBackend:
         pool_max_size=10,
         loop=None,
         create_connection_timeout=None,
+        sentinels=None,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -77,6 +78,8 @@ class RedisBackend:
         self.__pool_lock = None
         self._loop = loop
         self._pool = None
+
+        self._sentinels = sentinels or []
 
     @property
     def _pool_lock(self):
@@ -217,7 +220,10 @@ class RedisBackend:
                 if not AIOREDIS_BEFORE_ONE:
                     kwargs["create_connection_timeout"] = self.create_connection_timeout
 
-                self._pool = await aioredis.create_pool((self.endpoint, self.port), **kwargs)
+                if not self._sentinels:
+                    self._pool = await aioredis.create_pool((self.endpoint, self.port), **kwargs)
+                else:
+                    self._pool = await aioredis.sentinel.create_sentinel_pool(self._sentinels, **kwargs)
 
             return self._pool
 
@@ -244,6 +250,7 @@ class RedisCache(RedisBackend, BaseCache):
     :param pool_max_size: int maximum pool size for the redis connections pool. Default is 10
     :param create_connection_timeout: int timeout for the creation of connection,
         only for aioredis>=1. Default is None
+    :param sentinels: list of str if set, will use sentinels connection pool. Default is None
     """
 
     NAME = "redis"
