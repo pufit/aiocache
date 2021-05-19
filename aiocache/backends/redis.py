@@ -217,7 +217,7 @@ class RedisBackend:
                     "minsize": self.pool_min_size,
                     "maxsize": self.pool_max_size,
                 }
-                if not AIOREDIS_BEFORE_ONE:
+                if not AIOREDIS_BEFORE_ONE and not self._sentinels:
                     kwargs["create_connection_timeout"] = self.create_connection_timeout
 
                 if not self._sentinels:
